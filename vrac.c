@@ -14,12 +14,22 @@
 #include <unistd.h>
 
 #define DEFAULT_TTY_PATH ("/dev/ttyUSB0")
+#define DEFAULT_PUB_KEY_PATH ("./keys/dilithium2.pub")
 
 #define ATTEST_REGION_ADDR (0x40380000)
 #define ATTEST_REGION_SIZE (0x2000)
+#define SHA_256_DIGEST_SIZE (32)
 #define SPRAV_SIG_SIZE (2420)
+#define MESSAGE_LEN (SHA_256_DIGEST_SIZE + sizeof(uint32_t))
 
-//#include <oqs/oqs.h>
+const uint8_t default_hash[SHA_256_DIGEST_SIZE] = {
+	0xc9, 0x3a, 0xfd, 0x80, 0x2f, 0xf5, 0x82, 0x28,
+	0x8f, 0xce, 0xf8, 0x81, 0xb9, 0x11, 0x8c, 0x0f,
+	0x43, 0x11, 0x82, 0x1d, 0x61, 0xf1, 0xde, 0x23,
+	0x94, 0x01, 0xf4, 0xbb, 0x6b, 0xde, 0x74, 0x04,
+};
+
+#include <oqs/oqs.h>
 
 struct __attribute__((packed)) attest_request {
 	char     magic[5];
@@ -34,6 +44,33 @@ struct __attribute__((packed)) attest_response {
 	bool     success;
 	uint8_t  signature[SPRAV_SIG_SIZE];
 };
+
+int check_signature(uint8_t *signature, uint32_t nonce) {
+	OQS_STATUS ret = 0;
+	uint8_t public_key[OQS_SIG_dilithium_2_length_public_key];
+
+	uint8_t msg[MESSAGE_LEN];
+	uint32_t *nonce_ptr = (uint32_t *) (msg + SHA_256_DIGEST_SIZE);
+	FILE *public_key_file = NULL;
+
+	/* Read in public key */
+	if ((public_key_file = fopen(DEFAULT_PUB_KEY_PATH, "r")) == NULL) {
+		perror("[!] Failed to open public key file");
+		return errno;
+	}
+	if (fread(public_key, 1, OQS_SIG_dilithium_2_length_public_key, public_key_file) != OQS_SIG_dilithium_2_length_public_key) {
+		fprintf(stderr, "[!] File %s does not contain a valid public key\n", DEFAULT_PUB_KEY_PATH);
+		return ENOENT;
+	}
+	fclose(public_key_file);
+
+	/* Build message */
+	memcpy(msg, default_hash, SHA_256_DIGEST_SIZE);
+	*nonce_ptr = nonce;
+
+	/* Check signature */
+	return OQS_SIG_dilithium_2_verify(msg, MESSAGE_LEN, signature, SPRAV_SIG_SIZE, public_key);
+}
 
 int main(int argc, char **argv)
 {
@@ -89,18 +126,20 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	/* Check signature */
 	printf("[~] received attestation response\n");
 	if (resp.success != true) {
 		printf("[!] prover failed to compute a signature\n");
 		return EXIT_FAILURE;
 	}
 
-	printf("Signature:\n");
-	for (size_t i = 0; i < SPRAV_SIG_SIZE; i++) {
-		printf("%02x", resp.signature[i]);
+	/* Check signature */
+	status = check_signature(resp.signature, req.nonce);
+
+	if (status == OQS_SUCCESS) {
+		printf("[+] signature is valid\n");
+	} else {
+		printf("[!] signature is invalid\n");
 	}
-	printf("\n");
 
 
 	/* Close UART device */
