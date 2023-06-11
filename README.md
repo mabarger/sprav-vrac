@@ -15,6 +15,11 @@ cmake ../ -GNinja -DOQS_BUILD_ONLY_LIB=1 -DOQS_ALGS_ENABLED="STD"
 ninja
 ```
 
+Now you can build `sprav-vrac`:
+```
+gcc vrac.c -o sprav-vrac -Iliboqs/build/include liboqs/build/lib/liboqs.a -lcrypto
+```
+
 # Usage
 The application will connect to `SPRAV` running on another device via UART. If the device is connected to your machine simply run `sprav-vrac`:
 ```
