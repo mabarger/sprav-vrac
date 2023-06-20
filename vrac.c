@@ -13,6 +13,8 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include <oqs/oqs.h>
+
 #define DEFAULT_TTY_PATH ("/dev/ttyUSB0")
 #define DEFAULT_PUB_KEY_PATH ("./keys/dilithium2.pub")
 
@@ -28,8 +30,6 @@ const uint8_t default_hash[SHA_256_DIGEST_SIZE] = {
 	0x43, 0x11, 0x82, 0x1d, 0x61, 0xf1, 0xde, 0x23,
 	0x94, 0x01, 0xf4, 0xbb, 0x6b, 0xde, 0x74, 0x04,
 };
-
-#include <oqs/oqs.h>
 
 struct __attribute__((packed)) attest_request {
 	char     magic[5];
@@ -140,7 +140,6 @@ int main(int argc, char **argv)
 	} else {
 		printf("[!] signature is invalid\n");
 	}
-
 
 	/* Close UART device */
 	close(uart_fd);

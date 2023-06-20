@@ -5,19 +5,12 @@ This is supplementary software to [SPRAV](https://github.com/mabarger/zephyr-spr
 
 # Compilation
 
-First you need to build `liboqs`:
 ```
 git submodule init
 git submodule update
-cd liboqs
 mkdir build && cd build
-cmake ../ -GNinja -DOQS_BUILD_ONLY_LIB=1 -DOQS_ALGS_ENABLED="STD"
-ninja
-```
-
-Now you can build `sprav-vrac`:
-```
-gcc vrac.c -o sprav-vrac -Iliboqs/build/include liboqs/build/lib/liboqs.a -lcrypto
+cmake ..
+make
 ```
 
 # Usage
@@ -32,3 +25,6 @@ $ ./sprav-vrac
 [~] received attestation response
 [+] signature is valid
 ```
+
+# Cryptography
+The cryptographic material used is stored in `keys`. Note that the keys in there are only for testing purposes and should be replaced by the actual keys before use.
