@@ -3,11 +3,16 @@ SPRAV verifier remote attestation code
 
 This is supplementary software to [SPRAV](https://github.com/mabarger/zephyr-sprav/tree/sprav), specifically to the prover remote attestation code (`prac`), which is part of SPRAV. `sprav-vrac` runs on the verifier, from where it will send an attestation request to the `prac` and will verify the signature in the attestation response. This is a proof-of-concept and is not intended for production environments.
 
-# Compilation
-
+# liboqs
+Before compiling `liboqs` needs to be synced as follows:
 ```
 git submodule init
 git submodule update
+```
+
+# Compilation
+
+```
 mkdir build && cd build
 cmake ..
 make
