@@ -19,9 +19,9 @@ make
 ```
 
 # Usage
-The application will connect to `SPRAV` running on another device via UART. If the device is connected to your machine simply run `sprav-vrac`:
+The application will connect to `SPRAV` running on another device via UART. If the device is connected to your machine simply run `sprav-vrac` from the repository root:
 ```
-$ ./sprav-vrac
+$ ./build/sprav-vrac
 [~] attestation request sent to prover
     |- addr:  0x40380000
     |- size:  0x00002000
