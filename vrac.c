@@ -15,20 +15,24 @@
 
 #include <oqs/oqs.h>
 
-#define DEFAULT_TTY_PATH ("/dev/ttyUSB0")
-#define DEFAULT_PUB_KEY_PATH ("./keys/dilithium2.pub")
+#define TTY_PATH ("/dev/ttyUSB0")
+
+#define PUB_KEY_PATH ("./keys/dilithium2.pub")
+#define SPRAV_SIG_SIZE (OQS_SIG_dilithium_2_length_signature)
+#define OQS_SIG_VERIFY OQS_SIG_dilithium_2_verify
+#define OQS_SIG_PUB_KEY_LENGTH OQS_SIG_dilithium_2_length_public_key
 
 #define ATTEST_REGION_ADDR (0x40380000)
 #define ATTEST_REGION_SIZE (0x2000)
+
 #define SHA_256_DIGEST_SIZE (32)
-#define SPRAV_SIG_SIZE (2420)
 #define MESSAGE_LEN (SHA_256_DIGEST_SIZE + sizeof(uint32_t))
 
 const uint8_t default_hash[SHA_256_DIGEST_SIZE] = {
-	0xc9, 0x3a, 0xfd, 0x80, 0x2f, 0xf5, 0x82, 0x28,
-	0x8f, 0xce, 0xf8, 0x81, 0xb9, 0x11, 0x8c, 0x0f,
-	0x43, 0x11, 0x82, 0x1d, 0x61, 0xf1, 0xde, 0x23,
-	0x94, 0x01, 0xf4, 0xbb, 0x6b, 0xde, 0x74, 0x04,
+	0x5a, 0x42, 0x2b, 0x44, 0x30, 0xc4, 0x5f, 0xbb,
+	0x11, 0x73, 0xc3, 0x55, 0x28, 0xe6, 0xcd, 0x8e,
+	0xb8, 0x4e, 0x46, 0x9d, 0x96, 0x3e, 0x9f, 0x51,
+	0xc5, 0x53, 0x0f, 0xa0, 0xad, 0x48, 0xe9, 0xc8,
 };
 
 struct __attribute__((packed)) attest_request {
@@ -47,19 +51,19 @@ struct __attribute__((packed)) attest_response {
 
 int check_signature(uint8_t *signature, uint32_t nonce) {
 	OQS_STATUS ret = 0;
-	uint8_t public_key[OQS_SIG_dilithium_2_length_public_key];
+	uint8_t public_key[OQS_SIG_PUB_KEY_LENGTH];
 
 	uint8_t msg[MESSAGE_LEN];
 	uint32_t *nonce_ptr = (uint32_t *) (msg + SHA_256_DIGEST_SIZE);
 	FILE *public_key_file = NULL;
 
 	/* Read in public key */
-	if ((public_key_file = fopen(DEFAULT_PUB_KEY_PATH, "r")) == NULL) {
+	if ((public_key_file = fopen(PUB_KEY_PATH, "r")) == NULL) {
 		perror("[!] Failed to open public key file");
 		return errno;
 	}
-	if (fread(public_key, 1, OQS_SIG_dilithium_2_length_public_key, public_key_file) != OQS_SIG_dilithium_2_length_public_key) {
-		fprintf(stderr, "[!] File %s does not contain a valid public key\n", DEFAULT_PUB_KEY_PATH);
+	if (fread(public_key, 1, OQS_SIG_PUB_KEY_LENGTH, public_key_file) != OQS_SIG_PUB_KEY_LENGTH) {
+		fprintf(stderr, "[!] File %s does not contain a valid public key\n", PUB_KEY_PATH);
 		return ENOENT;
 	}
 	fclose(public_key_file);
@@ -69,13 +73,13 @@ int check_signature(uint8_t *signature, uint32_t nonce) {
 	*nonce_ptr = nonce;
 
 	/* Check signature */
-	return OQS_SIG_dilithium_2_verify(msg, MESSAGE_LEN, signature, SPRAV_SIG_SIZE, public_key);
+	return OQS_SIG_VERIFY(msg, MESSAGE_LEN, signature, SPRAV_SIG_SIZE, public_key);
 }
 
 int main(int argc, char **argv)
 {
 	struct termios uart_config;
-	char *uart_path = DEFAULT_TTY_PATH;
+	char *uart_path = TTY_PATH;
 	int uart_fd = 0;
 	int status = 0;
 	struct attest_request req = {{'s', 'p', 'r', 'a', 'v'}};
